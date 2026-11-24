@@ -88,7 +88,7 @@
   <div class="header-wrap">
     <div class="edition-badge">エンタメ特化版（13項目）</div>
     <h1>意外性プロット生成コントローラー</h1>
-    <p class="subtitle">Web小説・エンタメ向け：スライダー調整 → コピー → AIに貼り付け ・ ver1.3</p>
+    <p class="subtitle">Web小説・エンタメ向け：スライダー調整 → コピー → AIに貼り付け ・ ver1.4</p>
   </div>
 
   <div class="card">
@@ -523,6 +523,10 @@ ${formatText}`;
   });
 
   window.addEventListener('pageshow', () => { updatePreview(1); });
+  document.addEventListener('pointerdown', (e) => {
+    const seedEl = document.getElementById('seedInput');
+    if (seedEl && document.activeElement === seedEl && e.target !== seedEl) seedEl.blur();
+  });
   init();
 </script>
 </body>

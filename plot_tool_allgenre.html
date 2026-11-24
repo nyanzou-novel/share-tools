@@ -88,7 +88,7 @@
   <div class="header-wrap">
     <div class="edition-badge">幅広ジャンル対応版（15項目）</div>
     <h1>意外性プロット生成コントローラー</h1>
-    <p class="subtitle">現代劇・SF・サスペンス・純文学まで全ジャンル対応 ・ ver1.3</p>
+    <p class="subtitle">現代劇・SF・サスペンス・純文学まで全ジャンル対応 ・ ver1.4</p>
   </div>
 
   <div class="card">
@@ -531,6 +531,10 @@ ${formatText}`;
   });
 
   window.addEventListener('pageshow', () => { updatePreview(1); });
+  document.addEventListener('pointerdown', (e) => {
+    const seedEl = document.getElementById('seedInput');
+    if (seedEl && document.activeElement === seedEl && e.target !== seedEl) seedEl.blur();
+  });
   init();
 </script>
 </body>
