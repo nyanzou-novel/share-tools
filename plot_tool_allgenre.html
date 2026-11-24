@@ -6,6 +6,7 @@
 <title>意外性プロット生成【幅広ジャンル対応版】</title>
 <style>
   :root {
+    color-scheme: dark;
     --bg-color: #11101d;
     --card-bg: #1e1b33;
     --text-main: #f8fafc;
@@ -30,7 +31,7 @@
   .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.35); }
   .card-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
 
-  textarea.seed-input { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); padding: 10px; font-size: 0.9rem; resize: vertical; min-height: 76px; }
+  textarea.seed-input { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); padding: 10px; font-size: 16px; resize: vertical; min-height: 76px; }
   textarea.seed-input:focus { outline: none; border-color: var(--accent); }
 
   .btn-group { display: grid; gap: 8px; }
@@ -48,7 +49,7 @@
   .cat-label:first-of-type { margin-top: 0; }
   .slider-row { margin-bottom: 14px; padding: 0 10px; }
   .slider-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.84rem; margin-bottom: 6px; }
-  .badge { font-size: 0.68rem; padding: 1px 6px; border-radius: 4px; font-weight: 700; margin-left: 6px; }
+  .badge { font-size: 0.68rem; padding: 1px 6px; border-radius: 4px; font-weight: 700; margin-left: 6px; white-space: nowrap; }
   .badge-must { background: rgba(244, 63, 94, 0.2); color: #fda4af; border: 1px solid #f43f5e; }
   .badge-ban { background: rgba(165, 163, 194, 0.2); color: #cbd5e1; border: 1px solid #64748b; }
   .badge-mid { background: transparent; color: var(--text-muted); }
@@ -87,7 +88,7 @@
   <div class="header-wrap">
     <div class="edition-badge">幅広ジャンル対応版（15項目）</div>
     <h1>意外性プロット生成コントローラー</h1>
-    <p class="subtitle">現代劇・SF・サスペンス・純文学まで全ジャンル対応 ・ ver1.2</p>
+    <p class="subtitle">現代劇・SF・サスペンス・純文学まで全ジャンル対応 ・ ver1.3</p>
   </div>
 
   <div class="card">
@@ -323,6 +324,8 @@
       // 別作品を勝手に作らないよう、種とパラメーター要約を持たせ、前半が無ければ
       // まず前半の貼り付けを求める指示を入れる（v1.1修正をv1.2で再適用）
       const seed2 = document.getElementById('seedInput').value.trim();
+      const seed2Flat = seed2.replace(/\s+/g, ' ').trim();
+      const seed2Short = seed2Flat.slice(0, 120) + (seed2Flat.length > 120 ? '…' : '');
       const must2 = [], ban2 = [];
       PARAMETERS.forEach(p => {
         const v = values[p.id];
@@ -334,21 +337,24 @@
 この指示だけを新しいチャットに貼った場合は、後半を勝手に創作せず、「先に前半（全体設計＋第1〜6話）の出力結果を貼ってください」とだけ返してください。前半がある場合のみ、以下を出力してください。
 
 【引き継ぎ情報】
-・初期アイデア：${seed2 ? seed2 : '（前半の全体設計に従うこと）'}
+・初期アイデア：${seed2 ? seed2Short : '（前半の全体設計に従うこと）'}
 ・絶対条件：${must2.length ? must2.join(' / ') : '特になし'}
 ・禁止要素：${ban2.length ? ban2.join(' / ') : '特になし'}
 `;
+      const conflict2 = buildConflictRules();
+      const handoverFull = handover + (conflict2 ? conflict2 + '\n' : '') + (currentMode === 'trick' ? '\n【モード方針の引き継ぎ】\n・違和感・ひねりモード：前半で混入した「1点の異常」を後半でも引き継ぎ、それ以外の人間心理・行動ロジックはリアルに保つこと。\n' : '');
+      const tableLine = (values.mystery <= 30 && values.twist <= 30) ? '■ 印象づけと効果の対応一覧表（どの話で何を印象づけ、どの話でどう効いてくるか）' : (values.twist <= 30) ? '■ 伏線と回収の対応一覧表（どの話で張り、どの話でどう回収するか）' : (values.mystery <= 30) ? '■ 仕掛けと回収の対応一覧表（どの話で張り、どの話でどう回収するか）' : '■ 伏線と回収の対応一覧表（どの話で張り、どの話でどう反転・回収するか）';
       if (currentMode === 'chaos') {
-        return `続けて、前半（全体設計と第1話〜第6話）の勢いを引き継ぎ、【論理破壊カオスモード（整合性チェック強制オフ）】のまま後半パートを省略せず高密度に出力してください（合計約2,500字以上）。${handover}
+        return `続けて、前半（全体設計と第1話〜第6話）の勢いを引き継ぎ、【論理破壊カオスモード（整合性チェック強制オフ）】のまま後半パートを省略せず高密度に出力してください（合計約2,500字以上）。${handoverFull}
 【出力フォーマット（後半：第7話〜第12話＋カオス総括）】
 ■ 第7話〜第12話の暴走箱書き（各話350〜400字程度：常識を覆すさらなる異ジャンル介入・因果の飛躍・勢いで押し切る衝撃の結末を明記）
 ■ 作中の不条理ルール＆常識破壊ギミック一覧（どこでどんな常識を壊したか）
 ■ 読者の記憶に焼き付く衝撃の名セリフ・迷セリフ案（3選）`;
       }
-      return `続けて、前半（全体設計と第1話〜第6話）の流れを引き継ぎ、以下の後半パートを省略せず高密度に出力してください（合計約2,500字以上）。${handover}
+      return `続けて、前半（全体設計と第1話〜第6話）の流れを引き継ぎ、以下の後半パートを省略せず高密度に出力してください（合計約2,500字以上）。${handoverFull}
 【出力フォーマット（後半：第7話〜第12話＋総括表）】
 ■ 第7話〜第12話の詳細箱書き（各話350〜400字程度で、出来事・キャラの感情変化・次回への引きを明記）
-■ 伏線と回収の対応一覧表（どの話で張り、どの話でどう反転・回収するか）
+${tableLine}
 ■ 物語の核心を表す名セリフ・キラーフレーズ案（3選）`;
     }
 
@@ -366,17 +372,18 @@
 
     const conflictText = buildConflictRules();
 
+    const step3Core = (values.mystery <= 30 && values.twist <= 30) ? '終盤の見せ場を成立させるための心理描写と行動原理を序盤から論理的に積み上げよ。' : (values.mystery <= 30) ? '終盤の大反転を成立させるための行動原理と因果を序盤から論理的に逆算配置せよ（謎解き・伏線回収の仕掛けは使わないこと）。' : (values.twist <= 30) ? '伏線を序盤から論理的に逆算配置し、終盤で静かに回収せよ（前提を覆す大反転は行わないこと）。' : '終盤の大反転を成立させるための伏線を序盤から論理的に逆算配置せよ。';
     let algoText = '';
     if (currentMode === 'logic') {
       algoText = `【思考アルゴリズム：整合性重視モード（王道ロジック＋意外性）】
 以下の4ステップを内部で厳密に実行してから出力せよ（思考過程の途中メモは出力せず、最終成果物のみ提示すること）。
 ・Step 1（王道パターン排除）：入力テーマから連想される「ありきたりな展開・結末」を3つ想定し、それらをすべて【使用禁止NGリスト】に設定して回避せよ。
 ・Step 2（アイデア拡散・衝突）：【絶対条件】の高数値パラメーターを軸に、異質な要素や逆説的な因果を掛け合わせて意外性のある展開を構築せよ。
-・Step 3（整合性検証・逆算）：登場人物の動機・設定の矛盾を厳しく監査し、終盤の大反転を成立させるための伏線を序盤から論理的に逆算配置せよ。
+・Step 3（整合性検証・逆算）：登場人物の動機・設定の矛盾を厳しく監査し、${step3Core}
 ・Step 4（構成整形）：そのまま小説の執筆に入れる破綻のないプロットとして整形せよ。`;
     } else if (currentMode === 'trick') {
       algoText = `【思考アルゴリズム：違和感・ひねりモード（トリッキー）】
-以下の4ステップを内部で実行してから出力せよ。
+以下の4ステップを内部で実行してから出力せよ（思考過程の途中メモは出力せず、最終成果物のみ提示すること）。
 ・Step 1（王道パターン排除）：ありきたりなテンプレ展開を3つ洗い出し、使用禁止に設定せよ。
 ・Step 2（1点異常の混入）：物語の前提やルールの中に「1箇所だけ説明のつかない異常事態・異質な裏切り・奇妙な違和感」を意図的に混入させ、登場人物たちがそれに振り回される展開を作れ。
 ・Step 3（限定整合性検証）：その「1点の異常」以外の人間心理や行動ロジックはリアルに保ち、違和感の正体が終盤で異様な説得力を持つように構成せよ。
@@ -387,7 +394,7 @@
 ・Step 1（王道・常識の完全排除）：ありきたりな展開だけでなく、常識的な因果関係やジャンルのセオリーもすべて禁止対象にせよ。
 ・Step 2（ジャンル強制衝突・因果の飛躍）：物語の途中で別ジャンルのルールを強制介入させたり、因果関係を大胆に飛躍させたりして、人間では思いつかない突拍子もない展開を爆発させよ。
 ・Step 3（矛盾の放置許可）：整合性の監査プロセスを強制スキップし、矛盾や不条理を「作中の当たり前」として堂々と押し通せ。
-・Step 4（構成整形）：カオスで衝撃的な展開の面白さ・熱量が最大限に伝わるトーンで出力せよ。`;
+・Step 4（構成整形）：カオスで衝撃的な展開の面白さ・熱量が最大限に伝わるトーンで、最終成果物のみを出力せよ（思考過程の途中メモは出力しないこと）。`;
     }
 
     let formatText = '';
@@ -405,7 +412,7 @@
 2. 物語のコンセプトと「意外性の核（何がどう裏切られるか）」
 3. 主要キャラクター設計（表の顔・裏の本音・行動原理）
 4. 起承転結の全体プロット（序盤のフック〜中盤の転換〜クライマックスの反転〜結末）
-5. 読者を引き込むための重要な伏線・仕掛け（3つ）`;
+${values.mystery <= 30 ? '5. 読者を引き込むための重要な見せ場・印象に残る場面（3つ）' : '5. 読者を引き込むための重要な伏線・仕掛け（3つ）'}`;
     } else if (currentMode === 'chaos') {
       // 論理破壊×5,000字は「矛盾を放置せよ」というアルゴリズムと「破綻のない箱書き」という
       // 形式が衝突するため、専用フォーマットを定義する（v1.1修正をv1.2で再適用）
@@ -440,7 +447,7 @@ ${mustList.length > 0 ? mustList.join('\n') : '・特になし（全体のバラ
 ${banList.length > 0 ? banList.join('\n') : '・特になし'}
 
 ■ 標準調整パラメーター（35%〜65%のバランス指標）
-${midList.join(' / ')}
+${midList.length > 0 ? midList.join(' / ') : '・特になし（全項目が絶対条件／禁止要素のいずれかに振り分けられています）'}
 ${conflictText}
 
 ${formatText}`;
@@ -523,6 +530,7 @@ ${formatText}`;
     updatePreview(1);
   });
 
+  window.addEventListener('pageshow', () => { updatePreview(1); });
   init();
 </script>
 </body>
