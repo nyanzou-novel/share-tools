@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>意外性プロット生成【幅広ジャンル対応版】</title>
+<style>
+  :root {
+    --bg-color: #11101d;
+    --card-bg: #1e1b33;
+    --text-main: #f8fafc;
+    --text-muted: #a5a3c2;
+    --accent: #a78bfa;
+    --accent-rgb: 167, 139, 250;
+    --chaos: #f43f5e;
+    --trick: #f59e0b;
+    --logic: #10b981;
+    --border: #353056;
+    --input-bg: #11101d;
+    --preview-bg: #0a0912;
+    --sub-btn-bg: #353056;
+    --btn-text-dark: #11101d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+  body { background-color: var(--bg-color); color: var(--text-main); padding: 16px; line-height: 1.5; max-width: 720px; margin: 0 auto; padding-bottom: 84px; }
+  .header-wrap { text-align: center; margin-bottom: 18px; }
+  .edition-badge { display: inline-block; font-size: 0.7rem; font-weight: 800; padding: 2px 10px; border-radius: 999px; background: rgba(var(--accent-rgb), 0.18); color: var(--accent); border: 1px solid var(--accent); margin-bottom: 6px; }
+  h1 { font-size: 1.25rem; margin-bottom: 4px; color: var(--text-main); letter-spacing: 0.04em; }
+  .subtitle { font-size: 0.78rem; color: var(--text-muted); }
+  .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.35); }
+  .card-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+
+  textarea.seed-input { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); padding: 10px; font-size: 0.9rem; resize: vertical; min-height: 76px; }
+  textarea.seed-input:focus { outline: none; border-color: var(--accent); }
+
+  .btn-group { display: grid; gap: 8px; }
+  .btn-group.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .btn-group.cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .toggle-btn { background: var(--input-bg); border: 1px solid var(--border); color: var(--text-muted); padding: 10px 6px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; text-align: center; transition: all 0.2s; }
+  .toggle-btn span { display: block; font-size: 0.68rem; font-weight: 400; margin-top: 2px; opacity: 0.85; }
+
+  .toggle-btn.active[data-mode="logic"] { background: rgba(16, 185, 129, 0.15); border-color: var(--logic); color: var(--logic); }
+  .toggle-btn.active[data-mode="trick"] { background: rgba(245, 158, 11, 0.15); border-color: var(--trick); color: var(--trick); }
+  .toggle-btn.active[data-mode="chaos"] { background: rgba(244, 63, 94, 0.15); border-color: var(--chaos); color: var(--chaos); }
+  .toggle-btn.active[data-len] { background: rgba(var(--accent-rgb), 0.16); border-color: var(--accent); color: var(--accent); }
+
+  .cat-label { font-size: 0.78rem; color: var(--accent); font-weight: 700; margin: 14px 0 8px; background: rgba(var(--accent-rgb), 0.12); padding: 4px 8px; border-radius: 4px; }
+  .cat-label:first-of-type { margin-top: 0; }
+  .slider-row { margin-bottom: 14px; padding: 0 10px; }
+  .slider-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.84rem; margin-bottom: 6px; }
+  .badge { font-size: 0.68rem; padding: 1px 6px; border-radius: 4px; font-weight: 700; margin-left: 6px; }
+  .badge-must { background: rgba(244, 63, 94, 0.2); color: #fda4af; border: 1px solid #f43f5e; }
+  .badge-ban { background: rgba(165, 163, 194, 0.2); color: #cbd5e1; border: 1px solid #64748b; }
+  .badge-mid { background: transparent; color: var(--text-muted); }
+  .val-text { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 38px; text-align: right; }
+
+  /* Chrome / Safari / Edge / Firefox 全ブラウザ対応スライダー */
+  input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; background: var(--input-bg); border-radius: 4px; outline: none; border: 1px solid var(--border); touch-action: pan-y; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); cursor: pointer; box-shadow: 0 0 4px rgba(0,0,0,0.5); border: none; }
+  input[type="range"]::-moz-range-track { height: 6px; background: var(--input-bg); border-radius: 4px; border: 1px solid var(--border); }
+  input[type="range"]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: var(--accent); cursor: pointer; box-shadow: 0 0 4px rgba(0,0,0,0.5); border: none; }
+
+  .mini-actions { display: flex; gap: 8px; }
+  .mini-btn { background: var(--sub-btn-bg); color: #f8fafc; border: none; padding: 4px 10px; border-radius: 6px; font-size: 0.72rem; cursor: pointer; }
+  .mini-btn:active { opacity: 0.8; }
+
+  .action-area { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+  .primary-btn { width: 100%; background: var(--accent); color: var(--btn-text-dark); border: none; padding: 14px; border-radius: 10px; font-size: 0.96rem; font-weight: 800; cursor: pointer; box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.35); transition: all 0.2s; }
+  .primary-btn:active { transform: scale(0.98); }
+  .primary-btn.done { background: var(--card-bg); color: var(--logic); border: 2px solid var(--logic); box-shadow: none; }
+
+  .secondary-btn { width: 100%; background: var(--sub-btn-bg); color: #cbd5e1; border: 1px solid var(--border); padding: 13px; border-radius: 10px; font-size: 0.9rem; font-weight: 700; cursor: pointer; display: none; transition: all 0.2s; }
+  .secondary-btn.visible { display: block; }
+  .secondary-btn.ready { background: var(--logic); color: #0f172a; border-color: var(--logic); box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4); }
+  .secondary-btn.done { background: var(--card-bg); color: var(--logic); border: 2px solid var(--logic); box-shadow: none; }
+
+  .preview-hint { font-size: 0.72rem; color: var(--text-muted); margin-top: 12px; margin-bottom: 4px; }
+  textarea.preview-box { width: 100%; background: var(--preview-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 0.75rem; color: var(--text-muted); height: 150px; resize: vertical; line-height: 1.45; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--logic); color: #0f172a; font-weight: 800; padding: 12px 22px; border-radius: 999px; font-size: 0.85rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5); opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 100; max-width: 90vw; text-align: center; }
+  .toast.error { background: var(--chaos); color: #ffffff; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+  <div class="header-wrap">
+    <div class="edition-badge">幅広ジャンル対応版（15項目）</div>
+    <h1>意外性プロット生成コントローラー</h1>
+    <p class="subtitle">現代劇・SF・サスペンス・純文学まで全ジャンル対応 ・ ver1.2</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">1. 初期アイデア・設定の種（任意）</div>
+    <textarea id="seedInput" class="seed-input" placeholder="例：誰も住んでいないはずの空き部屋に、毎晩決まった時刻に灯りがつく。／空欄のままお任せ生成も可"></textarea>
+  </div>
+
+  <div class="card">
+    <div class="card-title">2. 思考アルゴリズム＆出力ボリューム</div>
+    <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:6px;">論理モード（推奨フロー：論理破壊 → 整合性重視 → 5,000字）</div>
+    <div class="btn-group cols-3" id="modeGroup" style="margin-bottom: 14px;">
+      <button type="button" class="toggle-btn active" data-mode="logic" onclick="setMode('logic')">
+        整合性重視
+        <span>破綻なし・伏線回収</span>
+      </button>
+      <button type="button" class="toggle-btn" data-mode="trick" onclick="setMode('trick')">
+        違和感・ひねり
+        <span>1点だけ異常を混入</span>
+      </button>
+      <button type="button" class="toggle-btn" data-mode="chaos" onclick="setMode('chaos')">
+        論理破壊
+        <span>カオス3案・種まき</span>
+      </button>
+    </div>
+
+    <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:6px;">出力文字数モード</div>
+    <div class="btn-group cols-2" id="lenGroup">
+      <button type="button" class="toggle-btn active" data-len="2000" onclick="setLen('2000')">
+        標準モード（約2,000字）
+        <span>骨格・キャラ・意外性の核</span>
+      </button>
+      <button type="button" class="toggle-btn" data-len="5000" onclick="setLen('5000')">
+        詳細箱書き（約5,000字）
+        <span>全12話構成・2段階リレー</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span>3. 可変パラメーター（15項目）</span>
+      <div class="mini-actions">
+        <button type="button" class="mini-btn" onclick="randomizeSliders()">ランダム</button>
+        <button type="button" class="mini-btn" onclick="resetSliders()">リセット(50%)</button>
+      </div>
+    </div>
+    <div style="font-size:0.72rem; color:var(--text-muted); margin-bottom:12px;">
+      ※ <b>70%以上</b>＝絶対条件 ／ <b>30%以下</b>＝禁止要素 としてAIに強制指示します
+    </div>
+    <div id="slidersContainer"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">4. AIへの指示文（プロンプト）生成</div>
+    <div class="action-area">
+      <button type="button" class="primary-btn" id="copyMainBtn" onclick="copyPrompt(1)">
+        指示文をコピーする（AIに貼り付け）
+      </button>
+      <button type="button" class="secondary-btn" id="copyRelayBtn" onclick="copyPrompt(2)">
+        【ステップ2】後半（第7〜12話＋伏線表）をコピー
+      </button>
+    </div>
+    <div class="preview-hint">生成された指示文プレビュー（タップで全選択・手動コピー可）</div>
+    <textarea class="preview-box" id="promptPreview" readonly inputmode="none" onclick="this.select()"></textarea>
+  </div>
+
+  <div class="toast" id="toast">クリップボードにコピーしました！</div>
+
+<script>
+  const PARAMETERS = [
+    { id: 'romance', cat: 'ジャンル・味の濃さ（5項目）', name: '恋愛要素', desc: '登場人物間の恋愛感情、関係性の変化、ロマンス描写の比重' },
+    { id: 'zamaa', cat: 'ジャンル・味の濃さ（5項目）', name: 'ザマァ（因果応報）要素', desc: '悪役・理不尽な相手への徹底的な断罪、逆転劇、報いを受けさせる展開の強さ' },
+    { id: 'literary', cat: 'ジャンル・味の濃さ（5項目）', name: '純文学・心理描写要素', desc: '内面の葛藤、象徴的な表現、余韻、人間性の深掘りの比重' },
+    { id: 'mystery', cat: 'ジャンル・味の濃さ（5項目）', name: 'ミステリー・伏線要素', desc: '謎の提示、ミスリード、伏線の張り巡らせ方と回収の緻密さ' },
+    { id: 'comedy', cat: 'ジャンル・味の濃さ（5項目）', name: 'コメディ・皮肉要素', desc: 'ユーモア、ブラックジョーク、シュールな掛け合いの比重' },
+
+    { id: 'twist', cat: '物語の構造・展開（5項目）', name: '終盤の大反転（どんでん返し）度', desc: '物語の最後に前提や認識が根底から覆る仕掛け・反転の強さ' },
+    { id: 'despair', cat: '物語の構造・展開（5項目）', name: '序盤の絶望・理不尽度', desc: '主人公が置かれる初期の逆境や不遇さの深さ（落差作り）' },
+    { id: 'catharsis', cat: '物語の構造・展開（5項目）', name: 'カタルシス（感動・達成感）要素', desc: '苦難を乗り越えた末の救済、目標達成、心の解放感の強さ' },
+    { id: 'convenience', cat: '物語の構造・展開（5項目）', name: 'ご都合主義の許容度', desc: '奇跡的な偶然や主人公への有利な展開をどの程度許すか' },
+    { id: 'bitter', cat: '物語の構造・展開（5項目）', name: 'バッドエンド／ビター度', desc: '切なさ・後味の悪さ・悲劇的な結末になる確率' },
+
+    { id: 'darkhero', cat: 'キャラクター・世界観（5項目）', name: '主人公の腹黒さ・冷徹さ', desc: '目的のために手段を選ばない度合い、計算高さ、ダークヒーロー性' },
+    { id: 'obsession', cat: 'キャラクター・世界観（5項目）', name: 'ヒロイン／相棒の重さ（執着度）', desc: 'サブキャラクターの主人公に対する執着、狂気、依存度の強さ' },
+    { id: 'realism', cat: 'キャラクター・世界観（5項目）', name: '設定のリアルさ（考証重視）', desc: '社会制度、物理法則、専門知識などのリアリティと緻密さ' },
+    { id: 'scifi', cat: 'キャラクター・世界観（5項目）', name: '非日常・超常要素（SF／ファンタジー度）', desc: '魔法、異世界、タイムリープ、超能力、近未来技術など現実離れした要素の比重' },
+    { id: 'suspense', cat: 'キャラクター・世界観（5項目）', name: '不気味さ・サスペンス度（ホラー／緊迫感）', desc: '生理的な恐怖、得体の知れない不気味さ、命の危機や心理的緊迫感の強さ' }
+  ];
+
+  let currentMode = 'logic';
+  let currentLen = '2000';
+  let values = {};
+  let toastTimer = null;
+
+  function init() {
+    const container = document.getElementById('slidersContainer');
+    let lastCat = '';
+    PARAMETERS.forEach(p => {
+      values[p.id] = 50;
+      if (p.cat !== lastCat) {
+        const catDiv = document.createElement('div');
+        catDiv.className = 'cat-label';
+        catDiv.textContent = p.cat;
+        container.appendChild(catDiv);
+        lastCat = p.cat;
+      }
+      const row = document.createElement('div');
+      row.className = 'slider-row';
+      row.innerHTML = `
+        <div class="slider-header">
+          <div>
+            <span>${p.name}</span>
+            <span class="badge badge-mid" id="badge-${p.id}">標準</span>
+          </div>
+          <span class="val-text" id="val-${p.id}">50%</span>
+        </div>
+        <input type="range" min="0" max="100" step="5" value="50" id="slider-${p.id}" oninput="onSlide('${p.id}', this.value)">
+      `;
+      container.appendChild(row);
+    });
+    resetRelayUI();
+    updatePreview(1);
+  }
+
+  function getRelayStep2Label() {
+    return currentMode === 'chaos'
+      ? '【ステップ2】後半（第7〜12話＋カオス総括）をコピー'
+      : '【ステップ2】後半（第7〜12話＋伏線表）をコピー';
+  }
+
+  function resetRelayUI() {
+    const mainBtn = document.getElementById('copyMainBtn');
+    const relayBtn = document.getElementById('copyRelayBtn');
+    mainBtn.classList.remove('done');
+    relayBtn.classList.remove('ready', 'done');
+    if (currentLen === '5000') {
+      mainBtn.textContent = '【ステップ1】前半（全体設計＋第1〜6話）をコピー';
+      relayBtn.textContent = getRelayStep2Label();
+      relayBtn.classList.add('visible');
+    } else {
+      mainBtn.textContent = '指示文をコピーする（AIに貼り付け）';
+      relayBtn.classList.remove('visible');
+    }
+  }
+
+  function updateSliderDisplay(id, val) {
+    val = parseInt(val, 10);
+    values[id] = val;
+    document.getElementById(`val-${id}`).textContent = val + '%';
+    const badge = document.getElementById(`badge-${id}`);
+    if (val >= 70) {
+      badge.textContent = '絶対条件';
+      badge.className = 'badge badge-must';
+    } else if (val <= 30) {
+      badge.textContent = '禁止要素';
+      badge.className = 'badge badge-ban';
+    } else {
+      badge.textContent = '標準';
+      badge.className = 'badge badge-mid';
+    }
+  }
+
+  function onSlide(id, val) {
+    updateSliderDisplay(id, val);
+    resetRelayUI();
+    updatePreview(1);
+  }
+
+  function setMode(mode) {
+    currentMode = mode;
+    document.querySelectorAll('#modeGroup .toggle-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.mode === mode);
+    });
+    resetRelayUI();
+    updatePreview(1);
+  }
+
+  function setLen(len) {
+    currentLen = len;
+    document.querySelectorAll('#lenGroup .toggle-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.len === len);
+    });
+    resetRelayUI();
+    updatePreview(1);
+  }
+
+  function resetSliders() {
+    PARAMETERS.forEach(p => {
+      document.getElementById(`slider-${p.id}`).value = 50;
+      updateSliderDisplay(p.id, 50);
+    });
+    resetRelayUI();
+    updatePreview(1);
+  }
+
+  function randomizeSliders() {
+    PARAMETERS.forEach(p => {
+      const rnd = Math.floor(Math.random() * 21) * 5;
+      document.getElementById(`slider-${p.id}`).value = rnd;
+      updateSliderDisplay(p.id, rnd);
+    });
+    resetRelayUI();
+    updatePreview(1);
+  }
+
+  function buildConflictRules() {
+    if (currentMode === 'chaos') return '';
+    const rules = [];
+    if (values.bitter >= 70 && values.catharsis >= 70) {
+      rules.push('・「バッドエンド／ビター度」と「カタルシス要素」が共に高いため、主人公は目的や復讐を完全に達成して強烈な解放感を得るが、その代償として大切なものや人間性を失う「ビターな勝利（破滅的カタルシス）」として調停すること。');
+    }
+    if (values.comedy >= 70 && values.despair >= 70) {
+      rules.push('・「コメディ・皮肉要素」と「序盤の絶望・理不尽度」が共に高いため、状況は極めて過酷で理不尽だが、主人公の思考や周囲の反応を徹底的にブラックユーモア・乾いた笑いで描く「暗黒喜劇（ダークコメディ）」として調停すること。');
+    }
+    if (values.convenience >= 70 && values.realism >= 70) {
+      rules.push('・「ご都合主義の許容度」と「設定のリアルさ」が共に高いため、奇跡的な偶然が起きる場合でも、必ず社会制度・確率・事前準備などの緻密な考証による「納得感のある理屈」を裏付けとして付与すること。');
+    }
+    if (values.literary >= 70 && values.zamaa >= 70) {
+      rules.push('・「純文学・心理描写」と「ザマァ要素」が共に高いため、単なる勧善懲悪ではなく、悪役が自らの愚かさと空虚さに気づいて精神的に崩壊していく心理的・内面的な断罪として描くこと。');
+    }
+    if (values.scifi >= 70 && values.realism >= 70) {
+      rules.push('・「非日常・超常要素」と「設定のリアルさ」が共に高いため、SF・ファンタジー設定であっても明確な代償・物理法則・社会的影響まで緻密に考証した「ハードSF／リアル寄りファンタジー」として調停すること。');
+    }
+    if (values.suspense >= 70 && values.comedy >= 70) {
+      rules.push('・「不気味さ・サスペンス度」と「コメディ要素」が共に高いため、命の危機や不気味な状況下で奇妙なズレやシュールな会話が起きる「不条理サスペンス／ホラーコメディ」として調停すること。');
+    }
+    return rules.length > 0 ? '\n【相反パラメーター自動調停ルール】\n' + rules.join('\n') : '';
+  }
+
+  function generatePrompt(stepPart = 1) {
+    if (stepPart === 2) {
+      // 後半リレーは「同じチャットで続ける」前提だが、別チャットに貼られても
+      // 別作品を勝手に作らないよう、種とパラメーター要約を持たせ、前半が無ければ
+      // まず前半の貼り付けを求める指示を入れる（v1.1修正をv1.2で再適用）
+      const seed2 = document.getElementById('seedInput').value.trim();
+      const must2 = [], ban2 = [];
+      PARAMETERS.forEach(p => {
+        const v = values[p.id];
+        if (v >= 70) must2.push(`${p.name}:${v}%`);
+        else if (v <= 30) ban2.push(`${p.name}:${v}%`);
+      });
+      const handover = `
+【重要：前半がこのチャットに無い場合】
+この指示だけを新しいチャットに貼った場合は、後半を勝手に創作せず、「先に前半（全体設計＋第1〜6話）の出力結果を貼ってください」とだけ返してください。前半がある場合のみ、以下を出力してください。
+
+【引き継ぎ情報】
+・初期アイデア：${seed2 ? seed2 : '（前半の全体設計に従うこと）'}
+・絶対条件：${must2.length ? must2.join(' / ') : '特になし'}
+・禁止要素：${ban2.length ? ban2.join(' / ') : '特になし'}
+`;
+      if (currentMode === 'chaos') {
+        return `続けて、前半（全体設計と第1話〜第6話）の勢いを引き継ぎ、【論理破壊カオスモード（整合性チェック強制オフ）】のまま後半パートを省略せず高密度に出力してください（合計約2,500字以上）。${handover}
+【出力フォーマット（後半：第7話〜第12話＋カオス総括）】
+■ 第7話〜第12話の暴走箱書き（各話350〜400字程度：常識を覆すさらなる異ジャンル介入・因果の飛躍・勢いで押し切る衝撃の結末を明記）
+■ 作中の不条理ルール＆常識破壊ギミック一覧（どこでどんな常識を壊したか）
+■ 読者の記憶に焼き付く衝撃の名セリフ・迷セリフ案（3選）`;
+      }
+      return `続けて、前半（全体設計と第1話〜第6話）の流れを引き継ぎ、以下の後半パートを省略せず高密度に出力してください（合計約2,500字以上）。${handover}
+【出力フォーマット（後半：第7話〜第12話＋総括表）】
+■ 第7話〜第12話の詳細箱書き（各話350〜400字程度で、出来事・キャラの感情変化・次回への引きを明記）
+■ 伏線と回収の対応一覧表（どの話で張り、どの話でどう反転・回収するか）
+■ 物語の核心を表す名セリフ・キラーフレーズ案（3選）`;
+    }
+
+    const seed = document.getElementById('seedInput').value.trim();
+    const mustList = [];
+    const banList = [];
+    const midList = [];
+
+    PARAMETERS.forEach(p => {
+      const v = values[p.id];
+      if (v >= 70) mustList.push(`・${p.name}（${v}%）：${p.desc}`);
+      else if (v <= 30) banList.push(`・${p.name}（${v}%）：この要素は物語に絶対に含めないこと`);
+      else midList.push(`${p.name}:${v}%`);
+    });
+
+    const conflictText = buildConflictRules();
+
+    let algoText = '';
+    if (currentMode === 'logic') {
+      algoText = `【思考アルゴリズム：整合性重視モード（王道ロジック＋意外性）】
+以下の4ステップを内部で厳密に実行してから出力せよ（思考過程の途中メモは出力せず、最終成果物のみ提示すること）。
+・Step 1（王道パターン排除）：入力テーマから連想される「ありきたりな展開・結末」を3つ想定し、それらをすべて【使用禁止NGリスト】に設定して回避せよ。
+・Step 2（アイデア拡散・衝突）：【絶対条件】の高数値パラメーターを軸に、異質な要素や逆説的な因果を掛け合わせて意外性のある展開を構築せよ。
+・Step 3（整合性検証・逆算）：登場人物の動機・設定の矛盾を厳しく監査し、終盤の大反転を成立させるための伏線を序盤から論理的に逆算配置せよ。
+・Step 4（構成整形）：そのまま小説の執筆に入れる破綻のないプロットとして整形せよ。`;
+    } else if (currentMode === 'trick') {
+      algoText = `【思考アルゴリズム：違和感・ひねりモード（トリッキー）】
+以下の4ステップを内部で実行してから出力せよ。
+・Step 1（王道パターン排除）：ありきたりなテンプレ展開を3つ洗い出し、使用禁止に設定せよ。
+・Step 2（1点異常の混入）：物語の前提やルールの中に「1箇所だけ説明のつかない異常事態・異質な裏切り・奇妙な違和感」を意図的に混入させ、登場人物たちがそれに振り回される展開を作れ。
+・Step 3（限定整合性検証）：その「1点の異常」以外の人間心理や行動ロジックはリアルに保ち、違和感の正体が終盤で異様な説得力を持つように構成せよ。
+・Step 4（構成整形）：読者の予想を気持ちよく裏切るトリッキーなトーンで出力せよ。`;
+    } else {
+      algoText = `【思考アルゴリズム：論理破壊カオスモード（常識外れの種まき）】
+※重要：本モードでは「通常の整合性チェック・常識的な因果関係」を強制オフにする。
+・Step 1（王道・常識の完全排除）：ありきたりな展開だけでなく、常識的な因果関係やジャンルのセオリーもすべて禁止対象にせよ。
+・Step 2（ジャンル強制衝突・因果の飛躍）：物語の途中で別ジャンルのルールを強制介入させたり、因果関係を大胆に飛躍させたりして、人間では思いつかない突拍子もない展開を爆発させよ。
+・Step 3（矛盾の放置許可）：整合性の監査プロセスを強制スキップし、矛盾や不条理を「作中の当たり前」として堂々と押し通せ。
+・Step 4（構成整形）：カオスで衝撃的な展開の面白さ・熱量が最大限に伝わるトーンで出力せよ。`;
+    }
+
+    let formatText = '';
+    if (currentLen === '2000' && currentMode === 'chaos') {
+      formatText = `【出力フォーマット：論理破壊・種まきモード（約2,000字・3パターン生成）】
+互いに全く異なる方向性の「常識外れなプロット案」を3パターン出力せよ（各案600〜700字程度）。
+各パターンに以下を含めること：
+1. 仮タイトルと衝撃のキャッチコピー
+2. 物語の前提と「強制衝突させる異ジャンル／常識破壊ギミック」
+3. 起承転結の暴走プロット（読者の脳をバグらせる中盤の飛躍〜衝撃の結末）`;
+    } else if (currentLen === '2000') {
+      formatText = `【出力フォーマット：標準モード（約2,000字）】
+以下の項目を網羅し、全体で約2,000字の濃密なプロットを作成せよ。
+1. タイトル案（3案）とキャッチコピー
+2. 物語のコンセプトと「意外性の核（何がどう裏切られるか）」
+3. 主要キャラクター設計（表の顔・裏の本音・行動原理）
+4. 起承転結の全体プロット（序盤のフック〜中盤の転換〜クライマックスの反転〜結末）
+5. 読者を引き込むための重要な伏線・仕掛け（3つ）`;
+    } else if (currentMode === 'chaos') {
+      // 論理破壊×5,000字は「矛盾を放置せよ」というアルゴリズムと「破綻のない箱書き」という
+      // 形式が衝突するため、専用フォーマットを定義する（v1.1修正をv1.2で再適用）
+      formatText = `【出力フォーマット：詳細箱書きモード・前半（約2,500字）／論理破壊併用】
+長編の設計図として、要約や省略を一切せず高密度に出力せよ。今回は「全体設計と第1話〜第6話」までを出力し、第7話以降は次の指示で出力する。
+ただし本モードでは、整合性の整え方は「時系列と固有名詞の一致」だけに留め、カオスな核（異ジャンルの衝突・因果の飛躍）は伏線で回収しようとせず、そのまま作品の個性として残すこと。
+1. タイトル案と物語全体のコアコンセプト（カオスの核を明記）
+2. 主要キャラクター詳細（表裏の顔・初期状態と最終的な変化）
+3. 全12話の全体俯瞰ロードマップ（1行ずつ）
+4. 第1話〜第6話の詳細箱書き（各話350〜400字程度で、具体的なシーン展開・感情の動き・次回への引きを記述）`;
+    } else {
+      formatText = `【出力フォーマット：詳細箱書きモード・前半（約2,500字）】
+長編の設計図として、要約や省略を一切せず高密度に出力せよ。今回は「全体設計と第1話〜第6話」までを出力し、第7話以降は次の指示で出力する。
+1. タイトル案と物語全体のコアコンセプト
+2. 主要キャラクター詳細（表裏の顔・初期状態と最終的な変化）
+3. 全12話の全体俯瞰ロードマップ（1行ずつ）
+4. 第1話〜第6話の詳細箱書き（各話350〜400字程度で、具体的なシーン展開・感情の動き・次回への引きを記述）`;
+    }
+
+    return `あなたはあらゆるジャンル（現代劇・純文学・SF・ファンタジー・ミステリー・サスペンス等）に精通したプロの小説編集者兼プロット構成作家です。以下の指示とパラメーター設定に厳密に従い、人間が思いつかない意外性と深い構成力を備えた小説プロットを生成してください。
+
+【初期アイデア・テーマ】
+${seed ? seed : '（指定なし：以下のパラメーター設定から最も意外性が際立つオリジナル設定をゼロから構築せよ）'}
+
+${algoText}
+
+【パラメーター制御ルール】
+■ 絶対条件（70%以上：物語の主軸として必ず強く反映すること）
+${mustList.length > 0 ? mustList.join('\n') : '・特になし（全体のバランスを重視）'}
+
+■ 禁止要素（30%以下：物語から完全に排除すること）
+${banList.length > 0 ? banList.join('\n') : '・特になし'}
+
+■ 標準調整パラメーター（35%〜65%のバランス指標）
+${midList.join(' / ')}
+${conflictText}
+
+${formatText}`;
+  }
+
+  function updatePreview(part = 1) {
+    document.getElementById('promptPreview').value = generatePrompt(part);
+  }
+
+  function safeFocusNoScroll(el) {
+    try {
+      el.focus({ preventScroll: true });
+    } catch (e) {
+      el.focus();
+    }
+  }
+
+  async function copyPrompt(part) {
+    const text = generatePrompt(part);
+    const previewEl = document.getElementById('promptPreview');
+    previewEl.value = text;
+
+    let copied = false;
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(text);
+        copied = true;
+      } catch (e) { copied = false; }
+    }
+    if (!copied) {
+      const hadReadonly = previewEl.hasAttribute('readonly');
+      try {
+        if (hadReadonly) previewEl.removeAttribute('readonly');
+        safeFocusNoScroll(previewEl);
+        previewEl.select();
+        previewEl.setSelectionRange(0, text.length);
+        copied = document.execCommand('copy');
+      } catch (e) {
+        copied = false;
+      } finally {
+        if (hadReadonly) previewEl.setAttribute('readonly', '');
+      }
+    }
+
+    if (copied) {
+      showToast(part === 1 ? '指示文をコピーしました！AIに貼り付けてください' : '後半リレー用の指示文をコピーしました！', false);
+      if (currentLen === '5000') {
+        const mainBtn = document.getElementById('copyMainBtn');
+        const relayBtn = document.getElementById('copyRelayBtn');
+        if (part === 1) {
+          mainBtn.textContent = '✓ 前半コピー済（AIに送信後、下のステップ2へ）';
+          mainBtn.classList.add('done');
+          relayBtn.textContent = getRelayStep2Label();
+          relayBtn.classList.add('ready');
+          relayBtn.classList.remove('done');
+        } else {
+          relayBtn.textContent = '✓ 後半コピー済（AIに送信してください）';
+          relayBtn.classList.remove('ready');
+          relayBtn.classList.add('done');
+        }
+      }
+    } else {
+      safeFocusNoScroll(previewEl);
+      previewEl.select();
+      showToast('自動コピーが制限されました。下の枠内から手動でコピーしてください', true);
+    }
+  }
+
+  function showToast(msg, isError) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.toggle('error', isError);
+    t.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+  }
+
+  document.getElementById('seedInput').addEventListener('input', () => {
+    resetRelayUI();
+    updatePreview(1);
+  });
+
+  init();
+</script>
+</body>
+</html>
+
